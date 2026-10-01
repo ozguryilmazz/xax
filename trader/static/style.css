@@ -90,6 +90,9 @@ input { font: inherit; background: var(--panel2); color: var(--text); border: 1p
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 th { text-align: left; color: var(--muted); font-weight: 500; position: sticky; top: 0; background: var(--panel); padding: 4px 6px; }
 td { padding: 4px 6px; border-bottom: 1px solid #1f2430; white-space: nowrap; }
+tr.pos-row { cursor: pointer; }
+tr.pos-row:hover td { background: var(--panel2); }
+.tog { display: inline-block; width: 12px; color: var(--accent); }
 tr.leg td { color: var(--muted); font-size: 11px; background: #141821; }
 td button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 3px; padding: 2px 8px; }
 td input { width: 80px; padding: 2px 4px; display: inline-block; }

@@ -416,20 +416,28 @@
     $$(".tab").forEach((t) => t.classList.toggle("hidden", t.id !== "tab-" + b.dataset.tab));
   }));
 
+  // Pozisyon altındaki işlemler varsayılan olarak kapalı; açık olanlar hatırlanır
+  const openLegs = new Set(store.get("openLegs", []));
+  function toggleLegs(symbol) {
+    openLegs.has(symbol) ? openLegs.delete(symbol) : openLegs.add(symbol);
+    store.set("openLegs", [...openLegs]);
+    renderPositions();
+  }
+
   function renderPositions() {
     const el = $("#tab-positions");
     $(".tabs button[data-tab=positions]").textContent = `Pozisyonlar (${S.positions.length})`;
     if (!S.positions.length) { el.innerHTML = '<div class="empty">Açık pozisyon yok</div>'; return; }
     el.innerHTML = `<table><tr><th>Coin</th><th>Yön</th><th>Miktar</th><th>Ort. giriş</th><th>Başabaş</th><th>Mark</th>
       <th>Likidasyon</th><th>Acil SL</th><th>Teminat</th><th>Kaldıraç</th><th>K/Z (ROE)</th><th>Funding</th><th></th></tr>` +
-      S.positions.map((p) => `<tr>
-        <td><b>${p.symbol}</b></td><td class="${p.side === "LONG" ? "up" : "down"}">${p.side}</td><td>${p.qty}</td>
+      S.positions.map((p) => { const open = openLegs.has(p.symbol); return `<tr class="pos-row" data-toggle="${p.symbol}">
+        <td><span class="tog">${open ? "▾" : "▸"}</span> <b>${p.symbol}</b> <span class="muted">${p.legs.length} işlem</span></td><td class="${p.side === "LONG" ? "up" : "down"}">${p.side}</td><td>${p.qty}</td>
         <td>${fp(p.entry)}</td><td>${fp(p.breakeven)}</td><td>${fp(p.mark)}</td><td style="color:${C.liq}">${fp(p.liq)}</td>
         <td style="color:${C.em}">${fp(p.emergency)}</td><td>${fu(p.margin)}${p.added_margin ? ` <span class="muted">(+${fu(p.added_margin)})</span>` : ""}</td>
         <td>${p.leverage}x</td><td class="${cls(p.upnl)}">${fu(p.upnl)} (${pct(p.roe)})</td><td>${fu(-p.funding)}</td>
         <td><button data-act="margin" data-s="${p.symbol}">Teminat ekle</button> <button data-act="close" data-s="${p.symbol}">Kapat</button></td></tr>` +
-        p.legs.map((l, i) => `<tr class="leg"><td></td><td>işlem ${i + 1}</td><td>${l.qty}</td><td>${fp(l.entry)}</td><td></td><td></td><td></td><td></td>
-          <td>${fu(l.margin)}</td><td>${l.leverage}x</td><td colspan="3"><span class="down">SL ${fp(l.sl)}</span> &nbsp; <span class="up">TP ${fp(l.tp)}</span> &nbsp; ${dtime(l.opened_at)}</td></tr>`).join("")
+        (open ? p.legs : []).map((l, i) => `<tr class="leg"><td></td><td>işlem ${i + 1}</td><td>${l.qty}</td><td>${fp(l.entry)}</td><td></td><td></td><td></td><td></td>
+          <td>${fu(l.margin)}</td><td>${l.leverage}x</td><td colspan="3"><span class="down">SL ${fp(l.sl)}</span> &nbsp; <span class="up">TP ${fp(l.tp)}</span> &nbsp; ${dtime(l.opened_at)}</td></tr>`).join(""); }
       ).join("") + "</table>";
   }
 
@@ -473,6 +481,8 @@
   }
 
   document.addEventListener("click", async (e) => {
+    const row = e.target.closest("tr[data-toggle]");
+    if (row && !e.target.closest("button")) { toggleLegs(row.dataset.toggle); return; }
     const b = e.target.closest("button[data-act]");
     if (!b) return;
     try {
