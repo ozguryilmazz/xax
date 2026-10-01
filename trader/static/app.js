@@ -94,7 +94,7 @@
       const el = $(".chart", this.root);
       this.chart = LightweightCharts.createChart(el, {
         autoSize: true,
-        layout: { background: { type: "solid", color: "#0f1218" }, textColor: "#9aa3b2", fontSize: 11 },
+        layout: { background: { type: "solid", color: "transparent" }, textColor: "#9aa3b2", fontSize: 11 },
         grid: { vertLines: { color: "#181d26" }, horzLines: { color: "#181d26" } },
         timeScale: { timeVisible: true, secondsVisible: false, borderColor: "#262c38", rightOffset: 8 },
         rightPriceScale: { borderColor: "#262c38" },
