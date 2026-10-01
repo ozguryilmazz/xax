@@ -318,11 +318,32 @@
 
   // ---------------------------------------------------------------- coin listesi
   let coinFilter = "";
+  // Sıralama: başlığa tıkla → büyükten küçüğe, tekrar tıkla → küçükten büyüğe, 3. tık → varsayılan (hacim)
+  const SORT_COL = { sym: 0, price: 1, chg: 2, vol: 3 };
+  let coinSort = store.get("coinSort", { key: "vol", dir: -1 });
+  function renderSortHead() {
+    $$(".coins-head span").forEach((el) => {
+      const on = el.dataset.sort === coinSort.key;
+      el.classList.toggle("on", on);
+      el.dataset.arrow = on ? (coinSort.dir < 0 ? "▼" : "▲") : "";
+    });
+  }
+  $$(".coins-head span").forEach((el) => (el.onclick = () => {
+    const key = el.dataset.sort;
+    if (coinSort.key !== key) coinSort = { key, dir: key === "sym" ? 1 : -1 };
+    else if (coinSort.dir === (key === "sym" ? 1 : -1)) coinSort = { key, dir: -coinSort.dir };
+    else coinSort = { key: "vol", dir: -1 };
+    store.set("coinSort", coinSort);
+    renderSortHead(); renderCoins();
+  }));
+  renderSortHead();
   $("#coin-search").addEventListener("input", (e) => { coinFilter = e.target.value.trim().toUpperCase(); renderCoins(); });
   function renderCoins() {
     const list = $("#coin-list");
     const sel = panes[S.activePane]?.symbol;
-    const rows = S.top.filter((t) => !coinFilter || t[0].includes(coinFilter));
+    const col = SORT_COL[coinSort.key];
+    const rows = S.top.filter((t) => !coinFilter || t[0].includes(coinFilter))
+      .sort((a, b) => (col === 0 ? a[0].localeCompare(b[0]) : a[col] - b[col]) * coinSort.dir);
     list.innerHTML = rows.map((t) => `<div class="coin-row${t[0] === sel ? " sel" : ""}" data-s="${t[0]}">
       <span class="sym">${t[0].replace(/USDT$/, "")}</span>
       <span class="${t[4] > 0 ? "up" : t[4] < 0 ? "down" : ""}">${fp(t[1])}</span>
