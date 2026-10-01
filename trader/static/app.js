@@ -186,7 +186,8 @@
       const pos = S.positions.find((p) => p.symbol === this.symbol);
       const orders = S.orders.filter((o) => o.symbol === this.symbol);
       const pv = S.preview && S.orderPane === this.id && S.preview.symbol === this.symbol ? S.preview : null;
-      const sig = JSON.stringify([pos && [pos.breakeven.toFixed(10), pos.liq, pos.emergency, pos.legs.map((l) => l.id)], orders.map((o) => o.id), pv && [pv.price, pv.sl, pv.tp]]);
+      const showAll = pos && openLegs.has(pos.symbol);
+      const sig = JSON.stringify([pos && [pos.breakeven.toFixed(10), pos.liq, pos.emergency, pos.legs.map((l) => l.id), showAll], orders.map((o) => o.id), pv && [pv.price, pv.sl, pv.tp]]);
       if (sig === this.linesSig) return;
       this.linesSig = sig;
       this.posLines.forEach((l) => this.series.removePriceLine(l));
@@ -196,12 +197,19 @@
         line(pos.breakeven, C.be, "Başabaş", 0, 2);
         line(pos.liq, C.liq, "Likidasyon", 2);
         if (pos.emergency) line(pos.emergency, C.em, "Acil SL", 2);
-        pos.legs.forEach((l, i) => {
-          const n = pos.legs.length > 1 ? ` #${i + 1}` : "";
-          line(l.sl, C.down, "SL" + n, 0);
-          line(l.tp, C.up, "TP" + n, 0);
-          this.zones.push({ from: pos.breakeven, to: l.sl, kind: "sl" }, { from: pos.breakeven, to: l.tp, kind: "tp" });
-        });
+        // Her işlem kendi SL/TP'sinde ayrı kapanır. Grafik sade kalsın diye varsayılan olarak
+        // sadece ilk tetiklenecek (girişe en yakın) SL ve TP çizilir; pozisyon menüsü açılınca hepsi.
+        const legs = pos.legs.map((l, i) => ({ ...l, n: i + 1 }));
+        const s = pos.side === "LONG" ? 1 : -1;
+        const nearSl = legs.reduce((a, b) => (s * b.sl > s * a.sl ? b : a));
+        const nearTp = legs.reduce((a, b) => (s * b.tp < s * a.tp ? b : a));
+        const multi = legs.length > 1;
+        const more = multi && !showAll ? ` (+${legs.length - 1})` : "";
+        for (const l of legs) {
+          if (showAll || l === nearSl) line(l.sl, C.down, (multi ? `SL #${l.n}` : "SL") + (l === nearSl ? more : ""), 0);
+          if (showAll || l === nearTp) line(l.tp, C.up, (multi ? `TP #${l.n}` : "TP") + (l === nearTp ? more : ""), 0);
+        }
+        this.zones.push({ from: pos.breakeven, to: nearSl.sl, kind: "sl" }, { from: pos.breakeven, to: nearTp.tp, kind: "tp" });
       }
       for (const o of orders) {
         line(o.price, C.order, `Limit ${o.side === "LONG" ? "L" : "S"}`, 1);
@@ -422,6 +430,7 @@
     openLegs.has(symbol) ? openLegs.delete(symbol) : openLegs.add(symbol);
     store.set("openLegs", [...openLegs]);
     renderPositions();
+    for (const p of Object.values(panes)) p.updatePositionLines();
   }
 
   function renderPositions() {
