@@ -428,7 +428,7 @@
         <td style="color:${C.em}">${fp(p.emergency)}</td><td>${fu(p.margin)}${p.added_margin ? ` <span class="muted">(+${fu(p.added_margin)})</span>` : ""}</td>
         <td>${p.leverage}x</td><td class="${cls(p.upnl)}">${fu(p.upnl)} (${pct(p.roe)})</td><td>${fu(-p.funding)}</td>
         <td><button data-act="margin" data-s="${p.symbol}">Teminat ekle</button> <button data-act="close" data-s="${p.symbol}">Kapat</button></td></tr>` +
-        p.legs.map((l, i) => `<tr class="leg"><td></td><td>bacak ${i + 1}</td><td>${l.qty}</td><td>${fp(l.entry)}</td><td></td><td></td><td></td><td></td>
+        p.legs.map((l, i) => `<tr class="leg"><td></td><td>işlem ${i + 1}</td><td>${l.qty}</td><td>${fp(l.entry)}</td><td></td><td></td><td></td><td></td>
           <td>${fu(l.margin)}</td><td>${l.leverage}x</td><td colspan="3"><span class="down">SL ${fp(l.sl)}</span> &nbsp; <span class="up">TP ${fp(l.tp)}</span> &nbsp; ${dtime(l.opened_at)}</td></tr>`).join("")
       ).join("") + "</table>";
   }
