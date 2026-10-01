@@ -121,7 +121,8 @@ class ClientSession:
         events = [e for e in m.events if e["id"] > self.last_event]
         if events:
             self.last_event = events[-1]["id"]
-        payload = {"type": "tick", "tickers": market.top_payload(), "charts": charts, "events": events, **m.snapshot()}
+        payload = {"type": "tick", "tickers": market.top_payload(), "charts": charts, "events": events,
+                   "feed_age": market.feed_age(), **m.snapshot()}
         if self.trade_version != m.trade_version:
             self.trade_version = m.trade_version
             payload["trades"] = [t.to_dict() for t in m.storage.trades(100)]

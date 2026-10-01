@@ -13,11 +13,20 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 from typing import Awaitable, Callable
 
 import websockets
 
 log = logging.getLogger(__name__)
+
+# Binance 2026-03'te vadeli WebSocket adreslerini böldü; eski kök adres 2026-04-23'te kapatıldı.
+#   /market  : kline, ticker, markPrice gibi normal piyasa verisi
+#   /public  : bookTicker, depth gibi yüksek frekanslı veri
+#   /private : kullanıcı (hesap) akışı
+# Yeni adres bağlanamazsa (ör. testnet henüz desteklemiyorsa) eski adres denenir.
+MARKET_PATHS = ["/market", ""]
+USER_PATHS = ["/private/ws/{key}", "/private/ws?listenKey={key}", "/ws/{key}"]
 
 Handler = Callable[[str, dict | list], Awaitable[None] | None]
 
@@ -31,6 +40,7 @@ class MarketStream:
         self._ws = None
         self._task: asyncio.Task | None = None
         self._msg_id = 0
+        self.last_msg = 0.0
         self.connected = asyncio.Event()
 
     def start(self) -> None:
@@ -65,30 +75,39 @@ class MarketStream:
 
     async def _run(self) -> None:
         delay = 1
+        i = 0
         while True:
-            url = f"{self.ws_base}/stream?streams={'/'.join(self.base_streams)}"
+            path = MARKET_PATHS[i % len(MARKET_PATHS)]
+            url = f"{self.ws_base}{path}/stream?streams={'/'.join(self.base_streams)}"
+            got_data = False
             try:
                 async with websockets.connect(url, ping_interval=20, max_size=2**23) as ws:
                     self._ws = ws
                     self.connected.set()
-                    delay = 1
-                    log.info("Piyasa WebSocket bağlandı")
+                    log.info("Piyasa WebSocket bağlandı: %s", url.split("?")[0])
                     if self.dynamic:
                         await self._send("SUBSCRIBE", sorted(self.dynamic))
-                    async for raw in ws:
+                    while True:
+                        # !ticker@arr saniyede bir gelir; 15 sn sessizlik = bozuk bağlantı
+                        raw = await asyncio.wait_for(ws.recv(), timeout=15)
                         msg = json.loads(raw)
                         stream = msg.get("stream")
                         if not stream:
                             continue
+                        got_data = True
+                        delay = 1
+                        self.last_msg = time.time()
                         res = self.handler(stream, msg["data"])
                         if asyncio.iscoroutine(res):
                             await res
             except asyncio.CancelledError:
                 raise
             except Exception as e:
-                log.warning("Piyasa WebSocket koptu: %s (%s sn sonra tekrar)", e, delay)
+                log.warning("Piyasa WebSocket koptu (%s): %r (%s sn sonra tekrar)", path or "/", e, delay)
             self.connected.clear()
             self._ws = None
+            if not got_data:
+                i += 1  # bu adres veri vermedi, sıradaki adresi dene
             await asyncio.sleep(delay)
             delay = min(delay * 2, 30)
 
@@ -117,14 +136,19 @@ class UserStream:
 
     async def _run(self) -> None:
         delay = 1
+        i = 0
         keepalive = asyncio.create_task(self._keepalive())
         try:
             while True:
+                fmt = USER_PATHS[i % len(USER_PATHS)]
+                opened = False
                 try:
                     key = await self.rest.new_listen_key()
-                    async with websockets.connect(f"{self.ws_base}/ws/{key}", ping_interval=20) as ws:
+                    url = self.ws_base + fmt.format(key=key)
+                    async with websockets.connect(url, ping_interval=20) as ws:
+                        opened = True
                         delay = 1
-                        log.info("Kullanıcı WebSocket bağlandı")
+                        log.info("Kullanıcı WebSocket bağlandı: %s", fmt.split("{")[0])
                         async for raw in ws:
                             data = json.loads(raw)
                             res = self.handler(data.get("e", ""), data)
@@ -133,7 +157,9 @@ class UserStream:
                 except asyncio.CancelledError:
                     raise
                 except Exception as e:
-                    log.warning("Kullanıcı WebSocket koptu: %s", e)
+                    log.warning("Kullanıcı WebSocket koptu: %r", e)
+                if not opened:
+                    i += 1  # bu adrese bağlanılamadı, sıradaki adresi dene
                 await asyncio.sleep(delay)
                 delay = min(delay * 2, 30)
         finally:

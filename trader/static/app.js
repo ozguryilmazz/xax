@@ -280,12 +280,20 @@
     }
     S.positions = m.positions; S.orders = m.orders;
     renderAccount(m.account);
+    renderFeed(m.feed_age);
     renderPositions(); renderOrders();
     for (const p of Object.values(panes)) p.updatePositionLines();
     if (m.trades) renderHistory(m.trades);
     if (m.stats) renderStats(m.stats);
     for (const e of m.events || []) { addEvent(e); if (e.level !== "info") toast(e.text, e.level); }
     if (!$("#o-price").value) fillLastPrice();
+  }
+
+  function renderFeed(age) {
+    const el = $("#conn");
+    if (age == null) { el.textContent = "Binance verisi bekleniyor…"; el.className = "conn bad"; }
+    else if (age > 5) { el.textContent = `Binance verisi gelmiyor (${Math.round(age)} sn)`; el.className = "conn bad"; }
+    else { el.textContent = "canlı veri"; el.className = "conn ok"; }
   }
 
   function renderAccount(a) {

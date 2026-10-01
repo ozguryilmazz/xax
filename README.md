@@ -110,6 +110,9 @@ trader/
   static/                arayüz (TradingView Lightweight Charts)
 ```
 
+- Binance Mart 2026'da vadeli WebSocket adreslerini böldü (eski kök adres 23 Nisan 2026'da kapandı).
+  Piyasa verisi `wss://fstream.binance.com/market`, hesap akışı `/private` üzerinden alınır; bağlanamazsa
+  eski adres denenir. Sağ üstteki gösterge Binance verisinin akıp akmadığını gösterir.
 - Piyasa verisi tamamen WebSocket'ten gelir. REST sadece başlangıçta, grafik geçmişi
   yüklenirken ve emirlerde kullanılır; böylece Binance istek limitlerine takılınmaz.
 - Arayüz sunucuyla tek bir WebSocket üzerinden konuşur; sunucu saniyede bir güncelleme gönderir.

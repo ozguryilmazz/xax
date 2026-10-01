@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 
 from ..binance.rest import BinanceRest
 from ..binance.ws import MarketStream
@@ -31,6 +32,11 @@ class BinanceMarket(MarketHub):
         self.refresh_top()
         self.stream.start()
         self._tasks.append(asyncio.create_task(self._periodic()))
+
+    def feed_age(self) -> float | None:
+        if not self.stream.last_msg:
+            return None
+        return time.time() - self.stream.last_msg
 
     async def stop(self) -> None:
         for t in self._tasks:

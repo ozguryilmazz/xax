@@ -21,6 +21,7 @@ input { font: inherit; background: var(--panel2); color: var(--text); border: 1p
 .acct div span { color: var(--muted); margin-right: 4px; }
 .conn { color: var(--muted); white-space: nowrap; }
 .conn.ok { color: var(--up); }
+.conn.bad { color: var(--down); font-weight: 600; }
 
 .layout { display: grid; grid-template-columns: 260px 1fr 250px; height: calc(100vh - 40px - 260px); min-height: 380px; }
 .coins { border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--panel); min-height: 0; }

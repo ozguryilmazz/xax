@@ -52,6 +52,10 @@ class MarketHub(ABC):
     async def _unsubscribe_kline(self, symbol: str, base: str) -> None: ...
 
     # ---- ortak ----
+    def feed_age(self) -> float | None:
+        """Canlı piyasa akışından son mesajın üzerinden geçen saniye (bilinmiyorsa None)."""
+        return 0.0
+
     def info(self, symbol: str) -> SymbolInfo:
         return self.symbols.get(symbol) or SymbolInfo(symbol)
 
