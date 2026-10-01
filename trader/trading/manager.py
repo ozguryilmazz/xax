@@ -183,8 +183,14 @@ class TradeManager:
             raise TradeError("Yön LONG veya SHORT olmalı")
         if price <= 0:
             raise TradeError("Limit fiyatı geçersiz")
-        if self.market.last_price(symbol) is None:
+        last = self.market.last_price(symbol)
+        if last is None:
             raise TradeError(f"{symbol} için fiyat verisi yok")
+        if abs(price / last - 1) > self.s.max_price_deviation:
+            raise TradeError(
+                f"{symbol} limit fiyatı ({price}) piyasadan (%{abs(price / last - 1) * 100:.1f}) çok uzak; "
+                f"en fazla %{self.s.max_price_deviation * 100:.0f} olabilir"
+            )
         info = self.market.info(symbol)
         async with self._lock:
             p = self.preview(symbol, side, price, margin, leverage)

@@ -144,6 +144,8 @@ class ClientSession:
                 if pane not in self.panes:
                     raise TradeError(f"{pane} penceresinde açık grafik yok")
                 symbol = self.panes[pane][0]
+                if msg.get("symbol") and msg["symbol"] != symbol:
+                    raise TradeError(f"{pane} penceresindeki coin değişti ({symbol}); emri tekrar kontrol edin")
                 o = await m.place_order(symbol, msg["side"], float(msg["price"]), float(msg["margin"]), int(msg["leverage"]), pane)
                 data = {"id": o.id}
             elif kind == "cancel":

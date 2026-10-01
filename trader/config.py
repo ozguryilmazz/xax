@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     max_open_positions: int = 5
     max_leverage: int = 20
     max_margin_per_order: float = 200.0
+    # Limit fiyatı son fiyattan en fazla bu oranda uzak olabilir (yanlış coine/fiyata emir koruması)
+    max_price_deviation: float = 0.15
 
     top_n: int = 200
     # Sinyal: |fiyat değişimi| arttı ve hacim önceki muma göre en az bu oranda azaldı

@@ -252,6 +252,16 @@
   function setActivePane(id) {
     S.activePane = id;
     $$(".pane").forEach((p) => p.classList.toggle("active", p.dataset.pane === id));
+    // Tıklanan pencere işlem penceresi de olur (emir panelinden ayrıca değiştirilebilir)
+    if (S.orderPane !== id) selectOrderPane(id);
+  }
+
+  function selectOrderPane(id) {
+    S.orderPane = id;
+    $$("#o-pane button").forEach((x) => x.classList.toggle("on", x.dataset.v === id));
+    $$(".pane").forEach((p) => p.classList.toggle("trade", p.dataset.pane === id));
+    $("#o-price").value = "";
+    refreshOrderSymbol();
   }
 
   function initPanes() {
@@ -260,6 +270,7 @@
     panes.A.load(a, panes.A.interval);
     panes.B.load(b, panes.B.interval);
     setActivePane("A");
+    selectOrderPane("A");
   }
 
   (function zoneLoop() {
@@ -324,26 +335,25 @@
 
   // ---------------------------------------------------------------- emir paneli
   const seg = (id, cb) => $$(`#${id} button`).forEach((b) => (b.onclick = () => { $$(`#${id} button`).forEach((x) => x.classList.toggle("on", x === b)); cb(b.dataset.v); }));
-  seg("o-pane", (v) => { S.orderPane = v; $("#o-price").value = ""; refreshOrderSymbol(); });
-  seg("o-side", (v) => {
-    S.side = v;
+  seg("o-pane", (v) => selectOrderPane(v));
+  seg("o-side", (v) => { S.side = v; updateSubmit(); schedulePreview(); });
+  function updateSubmit() {
     const btn = $("#o-submit");
-    btn.className = "submit " + (v === "LONG" ? "long" : "short");
-    btn.textContent = `${v} limit emir ver`;
-    schedulePreview();
-  });
+    btn.className = "submit " + (S.side === "LONG" ? "long" : "short");
+    btn.textContent = `${S.side} ${orderSymbol() || ""} @ ${$("#o-price").value || "—"}`;
+  }
   $("#o-lev").addEventListener("input", (e) => { $("#o-lev-v").textContent = e.target.value; store.set("lev", e.target.value); schedulePreview(); });
   $("#o-margin").addEventListener("input", (e) => { store.set("margin", e.target.value); schedulePreview(); });
-  $("#o-price").addEventListener("input", schedulePreview);
+  $("#o-price").addEventListener("input", () => { updateSubmit(); schedulePreview(); });
   $("#o-last").onclick = () => { fillLastPrice(true); };
   $("#o-lev").value = store.get("lev", 5); $("#o-lev-v").textContent = $("#o-lev").value;
   $("#o-margin").value = store.get("margin", 10);
 
   function orderSymbol() { return panes[S.orderPane].symbol; }
-  function refreshOrderSymbol() { $("#o-symbol").textContent = `${orderSymbol() || "—"}  (Pencere ${S.orderPane})`; fillLastPrice(true); }
+  function refreshOrderSymbol() { $("#o-symbol").textContent = `${orderSymbol() || "—"}  (Pencere ${S.orderPane})`; fillLastPrice(true); updateSubmit(); }
   function fillLastPrice(force) {
     const t = S.tickers.get(orderSymbol());
-    if (t && (force || !$("#o-price").value)) { $("#o-price").value = t[1]; schedulePreview(); }
+    if (t && (force || !$("#o-price").value)) { $("#o-price").value = t[1]; updateSubmit(); schedulePreview(); }
   }
 
   let pvTimer = null;
@@ -367,9 +377,13 @@
 
   $("#o-submit").onclick = async () => {
     const btn = $("#o-submit");
+    const symbol = orderSymbol(), price = +$("#o-price").value;
+    const last = S.tickers.get(symbol)?.[1];
+    if (last && Math.abs(price / last - 1) > 0.03 &&
+        !confirm(`${symbol} şu an ${fp(last)}. Limit fiyatı ${fp(price)} bundan %${(Math.abs(price / last - 1) * 100).toFixed(1)} uzakta.\nYine de ${S.side} emri verilsin mi?`)) return;
     btn.disabled = true;
     try {
-      await request({ type: "order", pane: S.orderPane, side: S.side, price: +$("#o-price").value, margin: +$("#o-margin").value, leverage: +$("#o-lev").value });
+      await request({ type: "order", pane: S.orderPane, symbol, side: S.side, price, margin: +$("#o-margin").value, leverage: +$("#o-lev").value });
       toast("Emir gönderildi", "success");
     } catch (e) { toast(e.message, "error"); }
     btn.disabled = false;

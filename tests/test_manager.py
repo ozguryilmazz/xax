@@ -168,9 +168,18 @@ async def test_state_persists_across_restart(tmp_path):
     db = str(tmp_path / "t.db")
     m, mk = await make(storage=Storage(db, "paper"))
     o = await m.place_order("AAAUSDT", "LONG", 100.0, 10, 5)
-    await m.place_order("BBBUSDT", "SHORT", 120.0, 10, 5)
+    await m.place_order("BBBUSDT", "SHORT", 110.0, 10, 5)
     wallet = m.wallet
     m2, _ = await make(storage=Storage(db, "paper"))
     assert m2.wallet == pytest.approx(wallet)
     assert m2.positions["AAAUSDT"].legs[0].sl_price == o.sl_price
     assert len(m2.orders) == 1
+
+
+async def test_limit_price_far_from_market_rejected():
+    m, mk = await make()
+    # TRUMP 2.07'deyken MOVR fiyatıyla (2.84) emir: %37 uzak → reddedilir
+    mk.px("AAAUSDT", 2.073)
+    with pytest.raises(TradeError, match="çok uzak"):
+        await m.place_order("AAAUSDT", "SHORT", 2.844, 10, 5)
+    assert not m.orders
