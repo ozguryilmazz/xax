@@ -177,7 +177,7 @@
         lineWidth: l.strength > 0.8 ? 3 : l.strength > 0.5 ? 2 : 1,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `${l.kind === "resistance" ? "Direnç" : "Destek"} ${l.touches}x`,
+        title: `D${l.touches}`,
       }));
     }
 
