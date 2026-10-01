@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Futures Trader</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/vendor/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">Futures Trader <span id="mode-badge" class="badge">…</span></div>
+  <div class="acct" id="account"></div>
+  <div class="conn" id="conn">bağlanıyor…</div>
+</header>
+
+<main class="layout">
+  <aside class="coins">
+    <input id="coin-search" placeholder="Coin ara (ör. BTC)" autocomplete="off">
+    <div class="coins-head"><span>Coin</span><span>Fiyat</span><span>24s %</span><span>Hacim</span></div>
+    <div id="coin-list" class="coin-list"></div>
+    <div class="hint">Tıkla: seçili pencereye yükle</div>
+  </aside>
+
+  <section class="charts">
+    <div class="pane" data-pane="A">
+      <div class="pane-head">
+        <span class="pane-tag">A</span><span class="pane-symbol">—</span><span class="pane-price">—</span>
+        <div class="intervals"></div>
+      </div>
+      <div class="chart-wrap"><div class="chart"></div><div class="overlay"></div><div class="legend"></div></div>
+    </div>
+    <div class="pane" data-pane="B">
+      <div class="pane-head">
+        <span class="pane-tag">B</span><span class="pane-symbol">—</span><span class="pane-price">—</span>
+        <div class="intervals"></div>
+      </div>
+      <div class="chart-wrap"><div class="chart"></div><div class="overlay"></div><div class="legend"></div></div>
+    </div>
+  </section>
+
+  <aside class="order">
+    <h3>Yeni emir</h3>
+    <label>Pencere
+      <div class="seg" id="o-pane"><button data-v="A" class="on">A</button><button data-v="B">B</button></div>
+    </label>
+    <div class="o-symbol" id="o-symbol">—</div>
+    <div class="seg side" id="o-side"><button data-v="LONG" class="on long">LONG</button><button data-v="SHORT" class="short">SHORT</button></div>
+    <label>Limit fiyatı <span class="link" id="o-last">son fiyat</span><input id="o-price" type="number" step="any"></label>
+    <label>Teminat (USDT)<input id="o-margin" type="number" step="any" value="10"></label>
+    <label>Kaldıraç: <b id="o-lev-v">5</b>x<input id="o-lev" type="range" min="1" max="20" value="5"></label>
+    <div class="preview" id="o-preview"></div>
+    <button id="o-submit" class="submit long">LONG limit emir ver</button>
+    <div class="note">SL (teminatın %<span id="sl-pct">30</span>'u) ve TP (%<span id="tp-pct">15</span>) emirle birlikte kurulur, değiştirilemez ve iptal edilemez.</div>
+  </aside>
+</main>
+
+<section class="bottom">
+  <nav class="tabs">
+    <button data-tab="positions" class="on">Pozisyonlar</button>
+    <button data-tab="orders">Bekleyen emirler</button>
+    <button data-tab="history">İşlem geçmişi</button>
+    <button data-tab="stats">İstatistik</button>
+    <button data-tab="events">Olaylar</button>
+  </nav>
+  <div class="tab" id="tab-positions"></div>
+  <div class="tab hidden" id="tab-orders"></div>
+  <div class="tab hidden" id="tab-history"></div>
+  <div class="tab hidden" id="tab-stats"></div>
+  <div class="tab hidden" id="tab-events"></div>
+</section>
+
+<div id="toasts"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
